@@ -5,8 +5,8 @@ import {
     VersionedTransactionResponse,
 } from "@solana/web3.js";
 import promiseRetry from "promise-retry";
-import { wait } from "./utils/wait";
-import { logger, logInfo } from "./utils/logger";
+import { logger, logInfo } from "../utils/logger";
+import { wait } from "../utils/wait";
 
 type TransactionSenderAndConfirmationWaiterArgs = {
     connection: Connection;
