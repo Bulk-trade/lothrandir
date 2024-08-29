@@ -13,9 +13,11 @@
   "license": "ISC",
   "dependencies": {
     "@solana/web3.js": "^1.95.3",
+    "@types/amqplib": "^0.10.5",
     "@types/express": "^4.17.21",
     "@types/node": "^22.5.1",
     "@types/promise-retry": "^1.1.6",
+    "amqplib": "^0.10.4",
     "bs58": "^6.0.0",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",

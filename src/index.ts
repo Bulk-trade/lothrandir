@@ -1,9 +1,9 @@
-import { Connection, VersionedTransaction, VersionedTransactionResponse, Transaction } from '@solana/web3.js';
+import { VersionedTransaction, VersionedTransactionResponse, Transaction } from '@solana/web3.js';
 import express, { Request, Response, NextFunction } from 'express';
 import { logger, logInfo } from './utils/logger';
 import { config } from './utils/config';
 import { executeTransaction } from './transaction';
-import { getSignature } from './utils/get-signature';
+import client, { Connection, Channel, ConsumeMessage } from "amqplib";
 
 const port = config.port;
 
@@ -27,8 +27,6 @@ app.post('/transactions', async (req: Request, res: Response) => {
 
         const transaction = VersionedTransaction.deserialize(uint8ArrayTransaction);
 
-        const sign = getSignature(transaction);
-
         // Validate the transaction object
         if (!transaction) {
             return res.status(400).json({ error: 'Invalid transaction object' });
@@ -50,4 +48,35 @@ app.post('/transactions', async (req: Request, res: Response) => {
 app.listen(port, () => {
     console.log(`Transaction Engine listening at http://localhost:${port}`);
 })
+
+async function startConsumer() {
+    try {
+        const conn: Connection = await client.connect('amqp://localhost:5672');
+        const channel: Channel = await conn.createChannel();
+        const queue = 'transactions';
+
+        await channel.assertQueue(queue, { durable: false });
+
+        await channel.consume(queue, (msg) => {
+            if (msg) {
+                console.log('yes');
+                try {
+                    console.log(" [x] Received %s", msg.content.toString());
+                    // Process the parsed message here
+                } catch (error) {
+                    console.error('Error parsing message:', error);
+                }
+                // Acknowledge the message
+                channel.ack(msg);
+            }
+        });
+
+        console.log(`Waiting for messages in queue: ${queue}`);
+    } catch (error) {
+        console.error('Error in consumer:', error);
+    }
+}
+
+// Start the consumer
+startConsumer();
 
