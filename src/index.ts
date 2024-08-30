@@ -49,6 +49,7 @@ app.listen(port, () => {
     console.log(`Transaction Engine listening at http://localhost:${port}`);
 })
 
+let messageCount = 0;
 async function startConsumer() {
     try {
         const conn: Connection = await client.connect('amqp://localhost:5672');
@@ -57,20 +58,26 @@ async function startConsumer() {
 
         await channel.assertQueue(queue, { durable: false });
 
+        await channel.prefetch(5);
+
+        console.log(" [*] Waiting for messages in %s. To exit press CTRL+C", queue);
+
         await channel.consume(queue, (msg) => {
             if (msg) {
-                console.log('yes');
                 try {
-                    console.log(" [x] Received %s", msg.content.toString());
-                    // Process the parsed message here
+                    setTimeout(() => {
+                        channel.ack(msg);
+                        console.log(`Processed: ${msg.content.toString()}`);
+                        messageCount++;
+                        console.log(`Total messages processed: ${messageCount}`);
+                    }, 1000); // Simulate processing time
                 } catch (error) {
                     console.error('Error parsing message:', error);
                 }
                 // Acknowledge the message
-                channel.ack(msg);
+                noAck: false
             }
         });
-
         console.log(`Waiting for messages in queue: ${queue}`);
     } catch (error) {
         console.error('Error in consumer:', error);
@@ -79,4 +86,5 @@ async function startConsumer() {
 
 // Start the consumer
 startConsumer();
+
 
