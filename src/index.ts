@@ -52,7 +52,7 @@ app.listen(port, () => {
 let messageCount = 0;
 async function startConsumer() {
     try {
-        const conn: Connection = await client.connect('amqp://localhost:5672');
+        const conn: Connection = await client.connect('amqp://host.docker.internal:5672');
         const channel: Channel = await conn.createChannel();
         const queue = 'transactions';
 
