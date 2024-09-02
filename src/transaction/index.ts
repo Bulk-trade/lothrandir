@@ -3,6 +3,7 @@ import { ConnectionProvider } from "../utils/connection-provider";
 import { getSignature } from "../utils/get-signature";
 import { logInfo, logger } from "../utils/logger";
 import { versionedTransactionSenderAndConfirmationWaiter } from "./transaction-sender";
+import { jupParseResult, parseJupiterTransaction, updateTransactionMetrics} from '../utils/jup-utils';
 
 export async function executeTransaction(transaction: VersionedTransaction) {
 
@@ -25,8 +26,6 @@ export async function executeTransaction(transaction: VersionedTransaction) {
     // Serialize the transaction and get the recent blockhash
     const serializedTransaction = transaction.serialize();
 
-    //console.log('serializedTransaction', JSON.stringify(serializedTransaction, null, 2))
-
     // Send the transaction and wait for confirmation
     const transactionResponse = await sendTransaction(connection, liteConnection, serializedTransaction, blockhashResult);
 
@@ -39,17 +38,19 @@ export async function executeTransaction(transaction: VersionedTransaction) {
     }
 
     // Parse the transaction result
-    // const parseResult = await parseJupiterTransaction(signature);
-
-    // if (parseResult !== -1) {
-    //     await updateTransactionMetrics(baseMint, parseResult, quote, vault, wallet, signature);
-    // }
+    const parseResult = await parseJupiterTransaction(signature);
 
     const endTime = performance.now(); // Capture the end time after the function execution
     const timeTaken = endTime - startTime; // Calculate the time taken by subtracting the start time from the end time
 
     logInfo('JupiterSwap.swap()', `Time taken: ${timeTaken} milliseconds`);
 
+    if (parseResult !== -1) {
+        await updateTransactionMetrics( parseResult as jupParseResult, signature, timeTaken);
+    } else {
+        logger.error('Error parsing jup transaction');
+    }
+  
     return 'success';
 
 }

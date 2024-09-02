@@ -1,90 +1,69 @@
-import { VersionedTransaction, VersionedTransactionResponse, Transaction } from '@solana/web3.js';
-import express, { Request, Response, NextFunction } from 'express';
+import { VersionedTransaction } from '@solana/web3.js';
 import { logger, logInfo } from './utils/logger';
-import { config } from './utils/config';
 import { executeTransaction } from './transaction';
-import client, { Connection, Channel, ConsumeMessage } from "amqplib";
+import client, { Connection, Channel } from 'amqplib';
+import dotenv from 'dotenv';
+import { setBaseToken, setClientId, setQuoteToken, setSwapFees, setVault, setWallet } from './utils/transaction-info';
 
-// const port = config.port;
+// Load environment variables
+dotenv.config();
 
-// const app = express();
-
-// // Middleware to parse JSON bodies
-// app.use(express.json());
-
-// // Error handling middleware
-// app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
-//     console.error(err.stack);
-//     res.status(500).json({ error: 'Internal Server Error' });
-// });
-
-// // POST endpoint to receive Transaction object
-// app.post('/transactions', async (req: Request, res: Response) => {
-//     try {
-//         const { transaction: base64Transaction } = req.body;
-
-//         const uint8ArrayTransaction = Buffer.from(base64Transaction, 'base64');
-
-//         const transaction = VersionedTransaction.deserialize(uint8ArrayTransaction);
-
-//         // Validate the transaction object
-//         if (!transaction) {
-//             return res.status(400).json({ error: 'Invalid transaction object' });
-//         }
-
-//         const result = await executeTransaction(transaction);
-
-//         res.status(200).json({
-//             message: 'Transaction received successfully',
-//             transaction: transaction,
-//             result: result
-//         });
-//     } catch (error) {
-//         logger.error('Error processing transaction:', error);
-//         res.status(500).json({ error: 'Failed to process transaction' });
-//     }
-// });
-
-// app.listen(port, () => {
-//     console.log(`Transaction Engine listening at http://localhost:${port}`);
-// })
-
-let messageCount = 0;
-async function startConsumer() {
+async function startRmqConsumer() {
     try {
-        const conn: Connection = await client.connect('amqp://host.docker.internal:5672');
+        const conn: Connection = await client.connect('amqp://localhost:5672');
         const channel: Channel = await conn.createChannel();
         const queue = 'transactions';
 
-        await channel.assertQueue(queue, { durable: false });
+        await channel.assertQueue(queue, {
+            durable: false,
+            arguments: {
+                'x-message-ttl': 30000 // TTL of 60 seconds
+            }
+        });
 
         await channel.prefetch(5);
 
-        console.log(" [*] Waiting for messages in %s. To exit press CTRL+C", queue);
-
-        await channel.consume(queue, (msg) => {
+        await channel.consume(queue, async (msg) => {
             if (msg) {
                 try {
-                    setTimeout(() => {
-                        channel.ack(msg);
-                        console.log(`Processed: ${msg.content.toString()}`);
-                        messageCount++;
-                        console.log(`Total messages processed: ${messageCount}`);
-                    }, 1000); // Simulate processing time
+                    const message = JSON.parse(msg.content.toString());
+                    console.log(" [x] Received '%s'", message);
+
+                    // Set transaction-related information
+                    setClientId(message.client);
+                    setVault(message.vault);
+                    setWallet(message.wallet);
+                    setBaseToken(message.baseMint);
+                    setQuoteToken(message.quoteMint);
+                    setSwapFees(message.swapFees);
+
+                    // Deserialize the transaction
+                    const uint8ArrayTransaction = Buffer.from(message.txn, 'base64');
+                    const transaction = VersionedTransaction.deserialize(uint8ArrayTransaction);
+
+                    if (!transaction) {
+                        logger.error('Failed to deserialize transaction');
+                    } else {
+                        // Execute the transaction
+                       const result = await executeTransaction(transaction);
+                    }
+
                 } catch (error) {
-                    console.error('Error parsing message:', error);
+                    logger.error('Error processing message:', error);
                 }
-                // Acknowledge the message
-                noAck: false
+
+                // Acknowledge the message whether or not processing succeeded
+                channel.ack(msg);
             }
+        }, {
+            noAck: false // Use manual acknowledgment
         });
-        console.log(`Waiting for messages in queue: ${queue}`);
+
+        logInfo(`Waiting for messages in queue: ${queue}`);
     } catch (error) {
-        console.error('Error in consumer:', error);
+        logger.error('Error in RMQ consumer:', error);
     }
 }
 
 // Start the consumer
-startConsumer();
-
-
+startRmqConsumer();
