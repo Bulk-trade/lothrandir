@@ -25,7 +25,7 @@ export async function parseJupiterTransaction(signature: string): Promise<jupPar
 
     try {
         const connprovider = new ConnectionProvider();
-        const connection = connprovider.getConnection();
+        const connection = connprovider.getTritonConnection();
 
         const maxRetries = 10;
         let response: ParsedTransactionWithMeta | null = null;

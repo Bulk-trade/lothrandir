@@ -13,7 +13,7 @@ export async function getTokenDecimals(address: string) {
     try {
         // Create a new ConnectionProvider object and get the connection 
         const connectionProvider = new ConnectionProvider();
-        const connection = connectionProvider.getConnection();
+        const connection = connectionProvider.getTritonConnection();
         const response = await connection.getParsedAccountInfo(new PublicKey(address));
 
         // Check if value is not null and 'parsed' exists in data

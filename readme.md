@@ -1,6 +1,6 @@
 # Transaction Engine
 
-Transaction Engine is a service designed to handle and process transactions. It interacts with various APIs and databases to fetch token prices, calculate transaction details, and store transaction information.
+Transaction Engine powered by lite-rpc and yellowstone-grpc, is a service designed to handle and process transactions at high throughput. It interacts with various APIs and databases to fetch token prices, calculate transaction details, and store transaction information.
 
 
 ## Prerequisites
@@ -58,7 +58,12 @@ Transaction Engine is a service designed to handle and process transactions. It 
     docker-compose up --build -d
     ```
 
-2. Properly close the services:
+2. See realtime logs:
+    ```sh
+    docker-compose logs -f
+    ```
+
+3. Properly close the services:
     ```sh
     docker-compose down
     ```

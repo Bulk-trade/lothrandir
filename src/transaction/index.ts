@@ -11,7 +11,7 @@ export async function executeTransaction(transaction: VersionedTransaction) {
 
     // Create a new ConnectionProvider object and get the connection and lite connection
     const connectionProvider = new ConnectionProvider();
-    const connection = connectionProvider.getConnection();
+    const connection = connectionProvider.getTritonConnection();
     const liteConnection = connectionProvider.getLiteConnection();
 
     // Get the latest blockhash for the transaction
