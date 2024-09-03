@@ -5,7 +5,7 @@ import { logInfo } from "./logger.js";
 import { wait } from "./wait.js";
 import { calculateSolUSDValue, getTokenPriceFromJupiter } from "./token-price.js";
 import { DefaultApi, QuoteResponse } from "@jup-ag/api";
-import { getBaseToken, getClientId, getQuoteToken, getSwapFees, getVault, getWallet } from "./transaction-info.js";
+import { getBaseToken, getClientId, getQuoteToken, getSwapFeesPercentage, getVault, getWallet } from "./transaction-info.js";
 import { insertTransactionInfo, TransactionInfo } from "../db/db.js";
 
 export interface jupParseResult {
@@ -20,7 +20,7 @@ export interface jupParseResult {
     quoteTokenPrice: number;
 }
 
-export async function parseJupiterTransaction(signature: string): Promise<jupParseResult | number>  {
+export async function parseJupiterTransaction(signature: string): Promise<jupParseResult | number> {
     const startTime = performance.now(); // Start timing before the function call
 
     try {
@@ -173,7 +173,7 @@ export async function updateTransactionMetrics(result: jupParseResult, signature
         amountIn: result.amountInUsd,
         amountOut: result.amountOutUsd,
         txnFee: result.transactionFee,
-        swapFee: getSwapFees(),
+        swapFee: getSwapFeesPercentage() * result.amountInUsd,
         transactionPnL: result.transactionPnL,
         transactionLandingTime: landTime,
         baseTokenPrice: result.baseTokenPrice,

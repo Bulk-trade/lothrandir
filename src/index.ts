@@ -3,7 +3,7 @@ import { logger, logInfo } from './utils/logger';
 import { executeTransaction } from './transaction';
 import client, { Connection, Channel } from 'amqplib';
 import dotenv from 'dotenv';
-import { setBaseToken, setClientId, setQuoteToken, setSwapFees, setVault, setWallet } from './utils/transaction-info';
+import { setBaseToken, setClientId, setQuoteToken, setSwapFeesPercentage, setVault, setWallet } from './utils/transaction-info';
 
 // Load environment variables
 dotenv.config();
@@ -35,7 +35,7 @@ async function startRmqConsumer() {
                     setWallet(message.wallet);
                     setBaseToken(message.baseMint);
                     setQuoteToken(message.quoteMint);
-                    setSwapFees(message.swapFees);
+                    setSwapFeesPercentage(message.swapFees);
 
                     // Deserialize the transaction
                     const uint8ArrayTransaction = Buffer.from(message.txn, 'base64');
@@ -45,7 +45,7 @@ async function startRmqConsumer() {
                         logger.error('Failed to deserialize transaction');
                     } else {
                         // Execute the transaction
-                       const result = await executeTransaction(transaction);
+                        const result = await executeTransaction(transaction);
                     }
 
                 } catch (error) {

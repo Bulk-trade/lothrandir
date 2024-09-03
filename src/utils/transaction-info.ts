@@ -65,10 +65,10 @@ export function setWallet(value: string) {
     wallet = value;
 }
 
-export function getSwapFees(): number {
+export function getSwapFeesPercentage(): number {
     return swapFees;
 }
 
-export function setSwapFees(value: number) {
+export function setSwapFeesPercentage(value: number) {
     swapFees = value;
 }
