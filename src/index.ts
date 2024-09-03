@@ -10,8 +10,8 @@ dotenv.config();
 
 async function startRmqConsumer() {
     try {
-        const conn: Connection = await client.connect('amqp://localhost:5672');
-        const channel: Channel = await conn.createChannel();
+        const connection: Connection = await client.connect(process.env.RMQ_URL || 'amqp://localhost:5672');
+        const channel: Channel = await connection.createChannel();
         const queue = 'transactions';
 
         await channel.assertQueue(queue, {
