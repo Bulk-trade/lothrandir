@@ -55,7 +55,12 @@ Transaction Engine is a service designed to handle and process transactions. It 
 
 1. Start the services:
     ```sh
-    docker-compose up --build --scale app=5 -d
+    docker-compose up --build -d
+    ```
+
+2. Properly close the services:
+    ```sh
+    docker-compose down
     ```
 
 ## Development

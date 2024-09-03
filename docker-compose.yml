@@ -6,7 +6,7 @@ services:
     env_file:
       - .env
     deploy:
-      replicas: 5
+      replicas: 20
       restart_policy:
         condition: on-failure
     networks:
