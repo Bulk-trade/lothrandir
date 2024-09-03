@@ -48,7 +48,7 @@ Transaction Engine is a service designed to handle and process transactions. It 
 
 2. Run the Docker container:
     ```sh
-    docker run -d -p 3000:3000 --env-file .env transaction-engine
+    docker run -d -p 4000:4000 --env-file .env transaction-engine
     ```
 
 ### Using Docker Compose
