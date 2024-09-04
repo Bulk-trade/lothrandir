@@ -43,21 +43,24 @@ async function setupChannel(connection: Connection): Promise<Channel> {
 async function consumeMessages(channel: Channel) {
     await channel.consume(QUEUE_NAME, async (msg: Message | null) => {
         if (msg) {
-            try {
-                const message = JSON.parse(msg.content.toString());
-                logInfo(`Received message: ${JSON.stringify(message)}`);
-
-                // Process the message
-                await processTransactionMessage(message);
-
-            } catch (error) {
-                logger.error('Error processing message:', error);
+            if (msg) {
+                // Process each message concurrently
+                processMessageConcurrently(channel, msg);
             }
-
-            // Acknowledge the message whether or not processing succeeded
-            channel.ack(msg);
         }
     }, { noAck: false });
+}
+
+async function processMessageConcurrently(channel: Channel, msg: Message) {
+    // Each message is processed in a separate promise
+    processTransactionMessage(JSON.parse(msg.content.toString()))
+        .then(() => {
+            channel.ack(msg); // Acknowledge message after successful processing
+        })
+        .catch((error) => {
+            logger.error('Error processing message:', error);
+            channel.ack(msg); // acknowledge the message to discard it
+        });
 }
 
 async function processTransactionMessage(message: any) {
