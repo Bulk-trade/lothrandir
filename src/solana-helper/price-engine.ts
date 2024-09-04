@@ -20,7 +20,11 @@ export async function getTokenPrice(tokenMint: string): Promise<number | undefin
 
 export async function subscribeToPriceEngineWS(tokenMint: string, tokenDecimal: number) {
     try {
-        connectWebSocket(tokenMint, tokenDecimal);
+        if (!tokenPriceMap.has(tokenMint)) {
+            await connectWebSocket(tokenMint, tokenDecimal);
+        } else {
+            logInfo(`Already subscribed to WebSocket for mint: ${tokenMint}`);
+        }
     } catch (error) {
         logger.error('Error subscribing to WebSocket:', error);
     }
