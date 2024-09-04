@@ -8,7 +8,7 @@ import { setBaseToken, setClientId, setQuoteToken, setSwapFeesPercentage, setVau
 // Load environment variables
 dotenv.config();
 
-const RMQ_URL = process.env.RMQ_URL || 'amqp://localhost:5672';
+const RMQ_URL = 'amqp://localhost:5672';
 const QUEUE_NAME = 'transactions';
 const PREFETCH_COUNT = 5;
 const MESSAGE_TTL = 30 * 1000;

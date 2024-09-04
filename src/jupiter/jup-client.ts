@@ -1,12 +1,12 @@
 import { LAMPORTS_PER_SOL, ParsedTransactionWithMeta } from "@solana/web3.js";
 import { extract } from "@jup-ag/instruction-parser";
-import { ConnectionProvider } from "./connection-provider.js";
-import { logInfo } from "./logger.js";
-import { wait } from "./wait.js";
-import { calculateSolUSDValue, getTokenPriceFromJupiter } from "./token-price.js";
+import { logInfo } from "../utils/logger.js";
+import { wait } from "../utils/wait.js";
 import { DefaultApi, QuoteResponse } from "@jup-ag/api";
-import { getBaseToken, getClientId, getQuoteToken, getSwapFeesPercentage, getVault, getWallet } from "./transaction-info.js";
+import { getBaseToken, getClientId, getQuoteToken, getSwapFeesPercentage, getVault, getWallet } from "../utils/transaction-info.js";
 import { insertTransactionInfo, TransactionInfo } from "../db/db.js";
+import { ConnectionProvider } from "../solana-helper/connection-provider.js";
+import { getTokenPriceFromJupiter, calculateSolUSDValue } from "../solana-helper/token-price.js";
 
 export interface jupParseResult {
     amountIn: number;

@@ -1,12 +1,11 @@
 import { createJupiterApiClient } from "@jup-ag/api";
 import { SOL_MINT, USDC_DECIMAL, USDC_MINT } from "../utils/config.js";
 import { logInfo, logger } from "../utils/logger.js";
-import { convertToDecimal, convertToUnit, isErrorWithResponse } from "./utils.js";
-import { getJupQuote } from "./jup-utils.js";
+import { getJupQuote } from "../jupiter/jup-client.js";
+import { getBaseToken, getBaseTokenDecimal, getQuoteToken, getQuoteTokenDecimal } from "../utils/transaction-info.js";
+import { isErrorWithResponse, convertToUnit, convertToDecimal } from "../utils/utils.js";
 import { getTokenDecimals } from "./get-decimal.js";
-import { getBaseToken, getBaseTokenDecimal, getQuoteToken, getQuoteTokenDecimal } from "./transaction-info.js";
 import { getTokenPrice } from "./price-engine.js";
-
 /**
  * Fetches price data for a given token over a specified number of days.
  * @param tokenMintAddress The mint address of the token.
@@ -152,13 +151,13 @@ export async function getTokenPriceFromJupiterQuoteApi(sourceToken: string): Pro
             const price = convertToDecimal(Number(quote.outAmount), USDC_DECIMAL);
 
             logInfo("Token price: ", price);
-     
+
             return price;
         } catch (error) {
             logger.error(`Attempt ${retries + 1} failed: ${JSON.stringify(error)}`);
         }
     }
-    
+
     return 0;
 }
 
