@@ -3,11 +3,8 @@ import { ConnectionProvider } from "../solana-helper/connection-provider";
 import { getSignature } from "../solana-helper/get-signature";
 import { logInfo, logger } from "../utils/logger";
 import { versionedTransactionSenderAndConfirmationWaiter } from "../solana-helper/transaction-sender";
-import { jupParseResult, parseJupiterTransaction, updateTransactionMetrics } from "../jupiter/jup-client";
 
 export async function executeTransaction(transaction: VersionedTransaction) {
-
-    const startTime = performance.now(); // Start timing before the function call
 
     // Create a new ConnectionProvider object and get the connection and lite connection
     const connectionProvider = new ConnectionProvider();
@@ -37,21 +34,7 @@ export async function executeTransaction(transaction: VersionedTransaction) {
         return 'failed';
     }
 
-    // Parse the transaction result
-    const parseResult = await parseJupiterTransaction(signature);
-
-    const endTime = performance.now(); // Capture the end time after the function execution
-    const timeTaken = endTime - startTime; // Calculate the time taken by subtracting the start time from the end time
-
-    logInfo('JupiterSwap.swap()', `Time taken: ${timeTaken} milliseconds`);
-
-    if (parseResult !== -1) {
-        await updateTransactionMetrics(parseResult as jupParseResult, signature, timeTaken);
-    } else {
-        logger.error('Error parsing jup transaction');
-    }
-
-    return 'success';
+    return signature;
 
 }
 

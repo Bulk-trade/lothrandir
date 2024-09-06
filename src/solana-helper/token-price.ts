@@ -2,7 +2,6 @@ import { createJupiterApiClient } from "@jup-ag/api";
 import { SOL_MINT, USDC_DECIMAL, USDC_MINT } from "../utils/config.js";
 import { logInfo, logger } from "../utils/logger.js";
 import { getJupQuote } from "../jupiter/jup-client.js";
-import { getBaseToken, getBaseTokenDecimal, getQuoteToken, getQuoteTokenDecimal } from "../utils/transaction-info.js";
 import { isErrorWithResponse, convertToUnit, convertToDecimal } from "../utils/utils.js";
 import { getTokenDecimals } from "./get-decimal.js";
 import { getTokenPrice } from "./price-engine.js";
@@ -121,7 +120,7 @@ export async function getVsTokenPrice(sourceToken: string, vsToken: string): Pro
     return 0;
 }
 
-export async function getTokenPriceFromJupiterQuoteApi(sourceToken: string): Promise<number> {
+export async function getTokenPriceFromJupiterQuoteApi(sourceToken: string, baseToken: string, baseTokenDecimal: number, quoteToken: string, quoteTokenDecimal: number): Promise<number> {
     const cachedPrice = await getTokenPrice(sourceToken);
     if (cachedPrice !== undefined) {
         logInfo('Using cached price:', cachedPrice);
@@ -134,10 +133,10 @@ export async function getTokenPriceFromJupiterQuoteApi(sourceToken: string): Pro
     const jupiterQuoteApi = createJupiterApiClient({ basePath: process.env.TRITON_JUP_API });
 
     let amountIn;
-    if (sourceToken === getBaseToken()) {
-        amountIn = convertToUnit(1, getBaseTokenDecimal());
-    } else if (sourceToken === getQuoteToken()) {
-        amountIn = convertToUnit(1, getQuoteTokenDecimal());
+    if (sourceToken === baseToken) {
+        amountIn = convertToUnit(1, baseTokenDecimal);
+    } else if (sourceToken === quoteToken) {
+        amountIn = convertToUnit(1, quoteTokenDecimal);
     } else {
         const tokenDecimal = await getTokenDecimals(sourceToken);
         amountIn = convertToUnit(1, tokenDecimal);
@@ -158,7 +157,9 @@ export async function getTokenPriceFromJupiterQuoteApi(sourceToken: string): Pro
         }
     }
 
-    return 0;
+    // Fallback to getTokenPriceFromJupiter if all retries fail
+    logInfo('Falling back to getTokenPriceFromJupiter');
+    return await getTokenPriceFromJupiter(sourceToken);
 }
 
 export async function getTokenPriceFromJupiter(sourceToken: string): Promise<number> {
@@ -182,9 +183,7 @@ export async function getTokenPriceFromJupiter(sourceToken: string): Promise<num
         }
     }
 
-    // Fallback to getTokenPriceFromJupiter if all retries fail
-    logInfo('Falling back to getTokenPriceFromJupiterQuoteApi');
-    return await getTokenPriceFromJupiterQuoteApi(sourceToken);
+    return 0;
 }
 
 export async function calculateTokenAmountFromMint(tokenMint: string, usdAmount: number) {

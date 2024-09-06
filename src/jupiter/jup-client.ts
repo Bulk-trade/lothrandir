@@ -2,11 +2,10 @@ import { LAMPORTS_PER_SOL, ParsedTransactionWithMeta } from "@solana/web3.js";
 import { extract } from "@jup-ag/instruction-parser";
 import { logInfo } from "../utils/logger.js";
 import { wait } from "../utils/wait.js";
-import { DefaultApi, QuoteResponse } from "@jup-ag/api";
-import { getBaseToken, getClientId, getQuoteToken, getSwapFeesPercentage, getVault, getWallet } from "../utils/transaction-info.js";
+import { DefaultApi } from "@jup-ag/api";
 import { insertTransactionInfo, TransactionInfo } from "../db/db.js";
 import { ConnectionProvider } from "../solana-helper/connection-provider.js";
-import { getTokenPriceFromJupiter, calculateSolUSDValue } from "../solana-helper/token-price.js";
+import { getTokenPriceFromJupiter, calculateSolUSDValue, getTokenPriceFromJupiterQuoteApi } from "../solana-helper/token-price.js";
 
 export interface jupParseResult {
     amountIn: number;
@@ -20,7 +19,7 @@ export interface jupParseResult {
     quoteTokenPrice: number;
 }
 
-export async function parseJupiterTransaction(signature: string): Promise<jupParseResult | number> {
+export async function parseJupiterTransaction(signature: string, baseToken: string, baseTokenDecimal: number, quoteToken: string, quoteTokenDecimal: number): Promise<jupParseResult | number> {
     const startTime = performance.now(); // Start timing before the function call
 
     try {
@@ -64,7 +63,7 @@ export async function parseJupiterTransaction(signature: string): Promise<jupPar
 
         let amountInUsd
         if (result.inAmountInUSD === 0) {
-            const amountInTokenPrice = await getTokenPriceFromJupiter(result.inMint);
+            const amountInTokenPrice = await getTokenPriceFromJupiterQuoteApi(result.inMint, baseToken, baseTokenDecimal, quoteToken, quoteTokenDecimal);
             amountInUsd = amountIn * amountInTokenPrice;
         } else {
             amountInUsd = result.inAmountInUSD;
@@ -81,7 +80,7 @@ export async function parseJupiterTransaction(signature: string): Promise<jupPar
 
         let baseTokenPrice, quoteTokenPrice;
 
-        if (result.inMint === getBaseToken()) {
+        if (result.inMint === baseToken) {
             baseTokenPrice = result.inAmountInUSD / result.inAmountInDecimal!;
             quoteTokenPrice = result.outAmountInUSD / result.outAmountInDecimal!;
         } else {
@@ -161,19 +160,28 @@ export async function getJupQuote(jupiterQuoteApi: DefaultApi, baseMint: string,
  * @param {Keypair} wallet - The keypair representing the user's wallet.
  * @param {string} signature - The transaction signature.
  */
-export async function updateTransactionMetrics(result: jupParseResult, signature: string, landTime: number) {
+export async function updateTransactionMetrics(
+    result: jupParseResult,
+    signature: string,
+    landTime: number,
+    clientId: string,
+    vault: string,
+    wallet: string,
+    baseToken: string,
+    quoteToken: string,
+    swapFeesPercentage: number) {
 
     const transactionInfo: TransactionInfo = {
-        client: getClientId(),
-        vaultPubkey: getVault(),
-        tradePubkey: getWallet(),
-        baseMint: getBaseToken(),
-        quoteMint: getQuoteToken(),
+        client: clientId,
+        vaultPubkey: vault,
+        tradePubkey: wallet,
+        baseMint: baseToken,
+        quoteMint: quoteToken,
         signature: signature,
         amountIn: result.amountInUsd,
         amountOut: result.amountOutUsd,
         txnFee: result.transactionFee,
-        swapFee: getSwapFeesPercentage() * result.amountInUsd,
+        swapFee: swapFeesPercentage * result.amountInUsd,
         transactionPnL: result.transactionPnL,
         transactionLandingTime: landTime,
         baseTokenPrice: result.baseTokenPrice,

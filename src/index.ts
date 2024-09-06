@@ -3,8 +3,8 @@ import { logger, logInfo } from './utils/logger';
 import { executeTransaction } from './transaction';
 import client, { Connection, Channel, Message } from 'amqplib';
 import dotenv from 'dotenv';
-import { setBaseToken, setClientId, setQuoteToken, setSwapFeesPercentage, setVault, setWallet } from './utils/transaction-info';
 import { subscribeToPriceEngineWS } from './solana-helper/price-engine';
+import { jupParseResult, parseJupiterTransaction, updateTransactionMetrics } from './jupiter/jup-client';
 
 // Load environment variables
 dotenv.config();
@@ -65,17 +65,21 @@ async function processMessageConcurrently(channel: Channel, msg: Message) {
 
 async function processTransactionMessage(message: any) {
     try {
+        const startTime = performance.now(); // Start timing before the function call
+
         // Set transaction-related information
-        setClientId(message.client);
-        setVault(message.vault);
-        setWallet(message.wallet);
-        setBaseToken(message.baseMint);
-        setQuoteToken(message.quoteMint);
-        setSwapFeesPercentage(message.swapFees);
+        const clientId = message.client;
+        const vault = message.vault;
+        const wallet = message.wallet;
+        const baseToken = message.baseMint;
+        const baseTokenDecimal = message.baseDecimal;
+        const quoteToken = message.quoteMint;
+        const quoteTokenDecimal = message.quoteDecimal;
+        const swapFeesPercentage = message.swapFees;
 
         // Subscribe to the price engine if not already subscribed
-        await subscribeToPriceEngineWS(message.baseMint, message.baseDecimal);
-        await subscribeToPriceEngineWS(message.quoteMint, message.quoteDecimal);
+        await subscribeToPriceEngineWS(baseToken, baseTokenDecimal);
+        await subscribeToPriceEngineWS(quoteToken, quoteTokenDecimal);
 
         // Deserialize the transaction
         const uint8ArrayTransaction = Buffer.from(message.txn, 'base64');
@@ -86,8 +90,26 @@ async function processTransactionMessage(message: any) {
         }
 
         // Execute the transaction
-        const result = await executeTransaction(transaction);
-        logInfo('Transaction executed successfully:', result);
+        const signature = await executeTransaction(transaction);
+
+        // Return if the transaction failed or not confirmed
+        if (signature !== 'failed') {
+            return;
+        }
+
+        // Parse the transaction result
+        const parseResult = await parseJupiterTransaction(signature, baseToken, baseTokenDecimal, quoteToken, quoteTokenDecimal);
+
+        const endTime = performance.now(); // Capture the end time after the function execution
+        const timeTaken = endTime - startTime; // Calculate the time taken by subtracting the start time from the end time
+
+        logInfo('JupiterSwap.swap()', `Time taken: ${timeTaken} milliseconds`);
+
+        if (parseResult !== -1) {
+            await updateTransactionMetrics(parseResult as jupParseResult, signature, timeTaken, clientId, vault, wallet, baseToken, quoteToken, swapFeesPercentage);
+        } else {
+            logger.error('Error parsing jup transaction');
+        }
 
     } catch (error) {
         logger.error('Error during transaction processing:', error);
