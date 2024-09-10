@@ -120,7 +120,7 @@ export async function getVsTokenPrice(sourceToken: string, vsToken: string): Pro
     return 0;
 }
 
-export async function getTokenPriceFromJupiterQuoteApi(sourceToken: string, baseToken: string, baseTokenDecimal: number, quoteToken: string, quoteTokenDecimal: number): Promise<number> {
+export async function getTokenPriceFromPriceEngine(sourceToken: string, baseToken: string, baseTokenDecimal: number, quoteToken: string, quoteTokenDecimal: number): Promise<number> {
     const cachedPrice = await getTokenPrice(sourceToken);
     if (cachedPrice !== undefined) {
         logInfo('Using cached price:', cachedPrice);

@@ -5,7 +5,7 @@ import { wait } from "../utils/wait.js";
 import { DefaultApi } from "@jup-ag/api";
 import { insertTransactionInfo, TransactionInfo } from "../db/db.js";
 import { ConnectionProvider } from "../solana-helper/connection-provider.js";
-import { getTokenPriceFromJupiter, calculateSolUSDValue, getTokenPriceFromJupiterQuoteApi } from "../solana-helper/token-price.js";
+import { getTokenPriceFromJupiter, calculateSolUSDValue, getTokenPriceFromPriceEngine } from "../solana-helper/token-price.js";
 
 export interface jupParseResult {
     amountIn: number;
@@ -63,7 +63,7 @@ export async function parseJupiterTransaction(signature: string, baseToken: stri
 
         let amountInUsd
         if (result.inAmountInUSD === 0) {
-            const amountInTokenPrice = await getTokenPriceFromJupiterQuoteApi(result.inMint, baseToken, baseTokenDecimal, quoteToken, quoteTokenDecimal);
+            const amountInTokenPrice = await getTokenPriceFromPriceEngine(result.inMint, baseToken, baseTokenDecimal, quoteToken, quoteTokenDecimal);
             amountInUsd = amountIn * amountInTokenPrice;
         } else {
             amountInUsd = result.inAmountInUSD;
@@ -71,7 +71,7 @@ export async function parseJupiterTransaction(signature: string, baseToken: stri
 
         let amountOutUsd;
         if (result.outAmountInUSD == 0) {
-            const amountOutTokenPrice = await getTokenPriceFromJupiter(result.outMint);
+            const amountOutTokenPrice = await getTokenPriceFromPriceEngine(result.outMint, baseToken, baseTokenDecimal, quoteToken, quoteTokenDecimal);
             amountOutUsd = amountOut * amountOutTokenPrice;
         } else {
             amountOutUsd = result.outAmountInUSD;
