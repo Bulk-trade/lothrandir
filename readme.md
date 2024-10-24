@@ -1,6 +1,6 @@
-# Transaction Engine
+# Lóthrandir
 
-Transaction Engine powered by lite-rpc and yellowstone-grpc, is a service designed to handle and process transactions at high throughput. It interacts with various APIs and databases to fetch token prices, calculate transaction details, and store transaction information.
+Lóthrandir is a Transaction Engine powered by lite-rpc and yellowstone-grpc, is a service designed to handle and process transactions at high throughput. It interacts with various APIs and databases to fetch token prices, calculate transaction details, and store transaction information.
 
 
 ## Prerequisites
