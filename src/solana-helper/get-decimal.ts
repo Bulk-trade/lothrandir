@@ -2,6 +2,8 @@ import { PublicKey } from "@solana/web3.js";
 import { logInfo, logger } from "../utils/logger.js";
 import { ConnectionProvider } from "./connection-provider.js";
 
+
+const tokenDecimalsCache = new Map<string, number>();
 /**
    * Get the number of decimals for a token.
    * 
@@ -11,6 +13,9 @@ import { ConnectionProvider } from "./connection-provider.js";
    */
 export async function getTokenDecimals(address: string) {
     try {
+        if (tokenDecimalsCache.has(address)) {
+            return tokenDecimalsCache.get(address)!;
+        }
         // Create a new ConnectionProvider object and get the connection 
         const connectionProvider = new ConnectionProvider();
         const connection = connectionProvider.getTritonConnection();
@@ -20,6 +25,7 @@ export async function getTokenDecimals(address: string) {
         if (response.value && 'parsed' in response.value.data) {
             // Extract decimals from the response
             const decimals = response.value.data.parsed.info.decimals;
+            tokenDecimalsCache.set(address, Number(decimals));
             return Number(decimals);
         } else {
             logInfo('Data is not of type ParsedAccountData or value is null');

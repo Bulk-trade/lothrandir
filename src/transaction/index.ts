@@ -4,6 +4,9 @@ import { getSignature } from "../solana-helper/get-signature";
 import { logInfo, logger } from "../utils/logger";
 import { versionedTransactionSenderAndConfirmationWaiter } from "../solana-helper/transaction-sender";
 
+// Cache for blockhash to avoid redundant requests
+let cachedBlockhash: any = null;
+
 export async function executeTransaction(transaction: VersionedTransaction) {
 
     // Create a new ConnectionProvider object and get the connection and lite connection
@@ -36,6 +39,31 @@ export async function executeTransaction(transaction: VersionedTransaction) {
 
     return signature;
 
+}
+
+// function for sending batch transactions
+export async function executeBatchTransactions(transactions: VersionedTransaction[]) {
+    const connectionProvider = new ConnectionProvider();
+    const connection = connectionProvider.getTritonConnection();
+    const liteConnection = connectionProvider.getLiteConnection();
+    const blockhashResult = await refreshBlockhash(connection);
+
+    const results = await Promise.all(
+        transactions.map(async (transaction) => {
+            const serializedTransaction = transaction.serialize();
+            return await sendTransaction(connection,liteConnection, serializedTransaction, blockhashResult);
+        })
+    );
+
+    logInfo(`Batch Transactions: ${results.length} processed`);
+    return results;
+}
+
+async function refreshBlockhash(connection: Connection) {
+    if (!cachedBlockhash) {
+        cachedBlockhash = await connection.getLatestBlockhash({ commitment: "confirmed" });
+    }
+    return cachedBlockhash;
 }
 
 async function simulateTransaction(connection: Connection, transaction: VersionedTransaction) {
